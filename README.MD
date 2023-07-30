@@ -2,7 +2,7 @@
 # Create asset-vulnerability pairs from 3 JSON files
 
 Assumptions I made:
-- we need to create asset-vulnerability pairs where any vulnerability versions overlaps with one of the assets version for given platform id.
+- create asset-vulnerability pairs if any vulneralibity version overlaps with asset one for the same platformId.
 
 My solution described:
 - data validation using ajv
