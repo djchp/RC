@@ -1,0 +1,49 @@
+[
+  {
+    "id": "asset001",
+    "platformRelations": [
+      {
+        "platformId": "platform002",
+        "minVersion": "1.0",
+        "maxVersion": "2.0"
+      },
+      {
+        "platformId": "platform003",
+        "minVersion": "2.5",
+        "maxVersion": "3.0"
+      }
+    ]
+  },
+  {
+    "id": "asset002",
+    "name": "Database 1",
+    "platformRelations": [
+      {
+        "platformId": "platform001",
+        "minVersion": "2.0",
+        "maxVersion": "3.0"
+      },
+      {
+        "platformId": "platform003",
+        "minVersion": "1.0",
+        "maxVersion": "1.5"
+      }
+    ]
+  },
+  {
+    "id": "asset003",
+    "name": "Mobile App 1",
+    "platformRelations": [
+      {
+        "platformId": "platform002",
+        "minVersion": "3.0",
+        "maxVersion": "3.5"
+      },
+      {
+        "platformId": "platform003",
+        "minVersion": "1.5",
+        "maxVersion": "2.0"
+      }
+    ]
+  }
+]

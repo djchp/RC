@@ -1,4 +1,4 @@
-import { promises as fs } from "fs";
+import { createReadStream, promises as fs, createWriteStream } from "fs";
 import {
   Asset,
   AssetVulnerabilityPair,
@@ -6,21 +6,61 @@ import {
   Vulnerability,
 } from "./types/main-types";
 import Ajv, { JSONSchemaType } from "ajv";
-import compareVersions from "compare-versions";
-import Piscina from "piscina";
-import { chunk } from "lodash";
 import path from "path";
+import dotenv from "dotenv";
+import JSONStream from "jsonstream";
+import IntervalTree from "node-interval-tree";
+import compareVersions from "compare-versions";
+import { EOL } from "os";
+dotenv.config();
+
 const ajv = new Ajv();
 
+
 async function ReadJsonFile<T>(filePath: string): Promise<T> {
-  const data = await fs.readFile(filePath, "utf8");
-  return JSON.parse(data) as T;
+  return new Promise((resolve, reject) => {
+    const stream = createReadStream(filePath, "utf8");
+    const parser = JSONStream.parse("*");
+
+    const data: any[] = [];
+
+    stream
+      .pipe(parser)
+      .on("data", (item: any) => {
+        data.push(item);
+      })
+      .on("end", () => {
+        resolve(data as T);
+      })
+      .on("error", reject);
+  });
 }
 
-async function readAndValidatePlatforms() {
+async function WriteResultToJsonFile<T>(
+  fileName: string,
+  dataArray: T[]
+): Promise<void> {
+  const outputFilePath = path.join(process.cwd(), fileName);
+  try {
+    const writeStream = createWriteStream(outputFilePath, "utf8");
+    writeStream.write("[" + EOL);
+    dataArray.forEach((item, index) => {
+      writeStream.write(
+        JSON.stringify(item) + (index < dataArray.length - 1 ? "," + EOL : "")
+      );
+    });
+    writeStream.write(EOL + "]");
+    writeStream.end();
+    console.log(`Data written to ${outputFilePath} successfully.`);
+  } catch (err) {
+    console.error(`Error writing to ${outputFilePath}: ${err}`);
+  }
+}
+
+export async function readAndValidatePlatforms() {
   try {
     const platforms = (await ReadJsonFile(
-      "./files/Platforms.json"
+      `${process.env.PLATFORM_PATH}`
     )) as Platform[];
     const platformSchema: JSONSchemaType<Platform[]> = {
       type: "array",
@@ -39,12 +79,12 @@ async function readAndValidatePlatforms() {
     }
     return platforms;
   } catch (error: any) {
-    console.error("Error occurred:", error.message);
+    throw new Error(error.message);
   }
 }
-async function readAndValidateAssets() {
+export async function readAndValidateAssets() {
   try {
-    const assets = (await ReadJsonFile("./files/Assets.json")) as Asset[];
+    const assets = (await ReadJsonFile(`${process.env.ASSET_PATH}`)) as Asset[];
     const assetSchema: JSONSchemaType<Asset[]> = {
       type: "array",
       items: {
@@ -74,14 +114,14 @@ async function readAndValidateAssets() {
     }
     return assets;
   } catch (error: any) {
-    console.error("Error occurred:", error.message);
+    throw new Error(error.message);
   }
 }
-async function readAndValidateVulnerabilities() {
+export async function readAndValidateVulnerabilities() {
   try {
     const vulnerabilities = (await ReadJsonFile(
-      "./files/Vulnerabilities.json"
-    )) as Asset[];
+      `${process.env.VULN_PATH}`
+    )) as Vulnerability[];
     const vulnerabilitySchema: JSONSchemaType<Vulnerability[]> = {
       type: "array",
       items: {
@@ -113,7 +153,7 @@ async function readAndValidateVulnerabilities() {
     }
     return vulnerabilities;
   } catch (error: any) {
-    console.error("Error occurred:", error.message);
+    throw new Error(error.message);
   }
 }
 
@@ -123,59 +163,88 @@ async function calculatePairs(
   vulnerabilities: Vulnerability[]
 ) {
   const pairs: AssetVulnerabilityPair[] = [];
-
   const platformHelperMap = new Map(
     platforms.map((platform) => [platform.id, platform.name])
   );
 
-  const assetPlatformMap = new Map();
+  const assetPlatformMap: Map<string, [string, string, string][]> = new Map();
   assets.forEach((asset) => {
     asset.platformRelations.forEach((platformRelation) => {
-      const minMaxVersion = [
-        platformRelation.minVersion,
-        platformRelation.maxVersion,
-      ];
       const platformData =
         assetPlatformMap.get(platformRelation.platformId) || [];
-      platformData.push([asset.id, ...minMaxVersion]);
+      platformData.push([
+        asset.id,
+        platformRelation.minVersion,
+        platformRelation.maxVersion,
+      ]);
       assetPlatformMap.set(platformRelation.platformId, platformData);
     });
   });
+  const assetPlatformIntervalTrees: Map<
+    string,
+    IntervalTree<string>
+  > = new Map();
+  for (const [platformId, assetData] of assetPlatformMap) {
+    const tree = new IntervalTree<string>();
+    for (const [assetId, minVersion, maxVersion] of assetData) {
+      if (compareVersions.compare(minVersion, maxVersion, "<=")) {
+        tree.insert(parseFloat(minVersion), parseFloat(maxVersion), assetId);
+      } else {
+        console.error(
+          `Invalid version range for asset ${assetId}: ${minVersion} to ${maxVersion}`
+        );
+      }
+    }
 
-  const piscina = new Piscina({
-    filename: path.resolve(__dirname, 'worker.js')
-  });
-  const chunkSize = Math.ceil(vulnerabilities.length / 4);
-  const vulnerabilitiesChunks = chunk(vulnerabilities, chunkSize);
-  const tasks = vulnerabilitiesChunks.map((vulnerabilitiesChunk) =>
-    piscina.run({
-      assetPlatformMap: Array.from(assetPlatformMap), 
-      platformHelperMap: Array.from(platformHelperMap), 
-      vulnerabilitiesChunk,
-    })
-  );
-  const results = await Promise.all(tasks);
-  results.map((result) => {
-    pairs.push(...result);
-  });
+    assetPlatformIntervalTrees.set(platformId, tree);
+  }
+
+  for (const vulnerability of vulnerabilities) {
+    for (const platformRelation of vulnerability.platformRelations) {
+      const platformID = platformRelation.platformId;
+      const vulnerabilityMinVersion = parseFloat(platformRelation.minVersion);
+      const vulnerabilityMaxVersion = parseFloat(platformRelation.maxVersion);
+
+      let matchingAssets;
+      let holder;
+      if ((holder = assetPlatformIntervalTrees.get(platformID))) {
+        const commonPlatform = platformHelperMap.get(platformID);
+        matchingAssets = holder.search(
+          vulnerabilityMinVersion,
+          vulnerabilityMaxVersion
+        );
+        for (const assetID of matchingAssets) {
+          pairs.push({
+            assetId: assetID,
+            vulnerabilityId: vulnerability.id,
+            commonPlatform: commonPlatform ? commonPlatform : "asd",
+          });
+        }
+      }
+    }
+  }
 
   return pairs;
 }
 
 async function main() {
+  console.time("execution_time:");
   try {
-    const platforms = await readAndValidatePlatforms();
-    const assets = await readAndValidateAssets();
-    const vulnerabilities = await readAndValidateVulnerabilities();
+    const [platforms, assets, vulnerabilities] = await Promise.all([
+      readAndValidatePlatforms(),
+      readAndValidateAssets(),
+      readAndValidateVulnerabilities(),
+    ]);
     if (!platforms || !assets || !vulnerabilities) {
       throw new Error(
         "One or more given inputs have wrong format or property missing"
       );
     }
     const result = await calculatePairs(platforms, assets, vulnerabilities);
-    console.log(result);
+    await WriteResultToJsonFile<AssetVulnerabilityPair>("output.json", result);
   } catch (error: any) {
     console.error("An error occurred:", error.message);
   }
+  console.timeEnd("execution_time:");
 }
 main();

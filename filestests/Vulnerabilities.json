@@ -1,0 +1,113 @@
+[
+  {
+    "id": "vuln001",
+    "name": "SQL Injection",
+    "platformRelations": [
+      {
+        "platformId": "platform001",
+        "minVersion": "1.0",
+        "maxVersion": "2.0"
+      },
+      {
+        "platformId": "platform002",
+        "minVersion": "1.5",
+        "maxVersion": "2.5"
+      }
+    ]
+  },
+  {
+    "id": "vuln002",
+    "platformRelations": [
+      {
+        "platformId": "platform002",
+        "minVersion": "2.0",
+        "maxVersion": "3.0"
+      },
+      {
+        "platformId": "platform003",
+        "minVersion": "1.0",
+        "maxVersion": "1.5"
+      }
+    ]
+  },
+  {
+    "id": "vuln003",
+    "name": "Remote Code Execution (RCE)",
+    "platformRelations": [
+      {
+        "platformId": "platform001",
+        "minVersion": "2.5",
+        "maxVersion": "3.5"
+      },
+      {
+        "platformId": "platform003",
+        "minVersion": "2.0",
+        "maxVersion": "2.2"
+      }
+    ]
+  },
+  {
+    "id": "vuln004",
+    "name": "Directory Traversal",
+    "platformRelations": [
+      {
+        "platformId": "platform001",
+        "minVersion": "1.2",
+        "maxVersion": "2.2"
+      },
+      {
+        "platformId": "platform003",
+        "minVersion": "1.8",
+        "maxVersion": "2.5"
+      }
+    ]
+  },
+  {
+    "id": "vuln005",
+    "name": "Authentication Bypass",
+    "platformRelations": [
+      {
+        "platformId": "platform002",
+        "minVersion": "3.0",
+        "maxVersion": "4.0"
+      },
+      {
+        "platformId": "platform004",
+        "minVersion": "2.5",
+        "maxVersion": "3.5"
+      }
+    ]
+  },
+  {
+    "id": "vuln006",
+    "name": "Insecure Direct Object References (IDOR)",
+    "platformRelations": [
+      {
+        "platformId": "platform004",
+        "minVersion": "1.0",
+        "maxVersion": "2.0"
+      },
+      {
+        "platformId": "platform005",
+        "minVersion": "2.2",
+        "maxVersion": "3.0"
+      }
+    ]
+  },
+  {
+    "id": "vuln007",
+    "name": "Cross-Site Request Forgery (CSRF)",
+    "platformRelations": [
+      {
+        "platformId": "platform002",
+        "minVersion": "1.0",
+        "maxVersion": "1.5"
+      },
+      {
+        "platformId": "platform005",
+        "minVersion": "1.2",
+        "maxVersion": "2.2"
+      }
+    ]
+  }
+]

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "64c522cd080883141d8955a5",
+    "name": "Operating System 1"
+  },
+  {
+    "id": "64c522cdf7cf343881f50a56",
+    "name": "Web Server 1"
+  },
+  {
+    "id": "64c522cdd3c42b9ffae0b6ca",
+    "name": "Database Management System 1"
+  },
+  {
+    "id": "64c522cd196928d69a8da9ed",
+    "name": "Mobile App 1"
+  },
+
+  {
+    "id": "64c522cdb603442e06ebbc75",
+    "name": "Cloud Storage Service 1"
+  },
+
+  {
+    "id": "64c522cdb6a3349e38a8e15f",
+    "name": "Game Engine 1"
+  },
+  {
+    "id": "64c522cd57feff7aed27a24a",
+    "name": "Analytics Platform 1"
+  },
+  {
+    "id": "64c522cdede2082a5f5ea2b2",
+    "name": "Virtualization Software 1"
+  },
+  {
+    "id": "64c522cde97a17e2db989cff",
+    "name": "E-commerce Platform 1"
+  },
+  {
+    "id": "64c522cd8b75f2a7a66149a3",
+    "name": "Network Monitoring Tool 1"
+  }
+]

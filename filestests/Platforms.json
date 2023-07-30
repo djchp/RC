@@ -1,0 +1,13 @@
+[
+    {
+      "id": "platform001",
+      "name": "Operating System 1"
+    },
+    {
+      "id": "platform002",
+      "name": "Web Server 1"
+    },
+    {
+      "id": "platform003"
+    }
+  ]
